@@ -1,5 +1,4 @@
 -- 5 variant
-BEGIN;
 
 -- Task 1
 SELECT 
@@ -12,8 +11,6 @@ NATURAL LEFT JOIN
     jobs AS j
 WHERE 
     j.job_title = 'Programmer';
-
-SAVEPOINT T1;
 
 -- Task 2
 SELECT 
@@ -33,8 +30,6 @@ WHERE
     c.country_name = 'United States of America' AND
     d.department_name IN ('Shipping', 'Finance');
 
-SAVEPOINT T2;
-
 -- Task 3
 SELECT 
     e.first_name AS "Имя",
@@ -46,9 +41,7 @@ FROM
 NATURAL LEFT JOIN 
     jobs AS j
 WHERE 
-    e.salary < j.min_salary * 1.20;
-
-SAVEPOINT T3;
+    e.salary BETWEEN j.min_salary * 0.8 AND j.min_salary * 1.2;
 
 -- Task 4
 SELECT e.last_name AS Фамилия_Р, 
@@ -68,13 +61,7 @@ SELECT first_name AS Имя,
        job_id AS Должность,
        ROUND(salary) AS Оклад
   FROM employees
- WHERE employee_id IN (
-       SELECT e.employee_id
-         FROM employees AS e,
-              jobs AS j
-        WHERE e.salary = j.min_salary
-       );
-
-SAVEPOINT T5;
-
-COMMIT;
+ WHERE (job_id, salary) IN (
+    SELECT job_id, min_salary
+    FROM jobs
+);
