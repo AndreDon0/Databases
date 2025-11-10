@@ -53,7 +53,15 @@ SELECT e.last_name AS Фамилия_Р,
  WHERE e.manager_id = m.employee_id AND
        e.hire_date < m.hire_date;
 
-SAVEPOINT T4;
+-- Task 4.5
+  SELECT m.last_name AS "Manager_last_name",
+         TO_CHAR(m.hire_date, 'DD.MM.YYYY') AS "Manager_hire_date",
+         COUNT(e.employee_id) AS "Employee_count_hired_before_manager"
+    FROM employees e
+         JOIN employees m ON e.manager_id = m.employee_id AND
+                             e.hire_date < m.hire_date
+GROUP BY m.manager_id, 1, 2
+ORDER BY 1, 2, 3 DESC;
 
 -- Task 5
 SELECT first_name AS Имя,
