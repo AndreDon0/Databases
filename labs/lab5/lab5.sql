@@ -13,8 +13,12 @@ SELECT last_name, first_name, phone_number
  ORDER BY last_name, first_name;
 
 -- Task 3
-SELECT last_name, first_name,
-       REGEXP_REPLACE(email, '^(.{2})[^@]*(@)', '\1_\2') AS email
+SELECT last_name,
+       CASE
+          WHEN REGEXP_INSTR(email, '@') <= 3
+          THEN email
+          ELSE REGEXP_REPLACE(email, '^(.{2})[^@]*@', '\1_@')
+       END AS email
   FROM bd_employees
  ORDER BY last_name, email;
 
@@ -46,8 +50,37 @@ WITH RECURSIVE bd_letter_sum AS (
         1 AS pos,
         CASE 
           WHEN ASCII(UPPER(SUBSTR(last_name, 1, 1))) BETWEEN ASCII('A') AND ASCII('Z') 
-          THEN ASCII(UPPER(SUBSTR(last_name, 1, 1))) - ASCII('A') + 1 ELSE 0
-        END AS sum_letters
+          THEN ASCII(UPPER(SUBSTR(last_name, 1, 1))) - ASCII('A') + 1
+          WHEN ASCII(UPPER(SUBSTR(last_name, 1, 1))) BETWEEN ASCII('А') AND ASCII('Е')
+          THEN ASCII(UPPER(SUBSTR(last_name, 1, 1))) - ASCII('А') + 1
+          WHEN UPPER(SUBSTR(last_name, 1, 1)) = 'Ё' 
+          THEN 7
+          WHEN ASCII(UPPER(SUBSTR(last_name, 1, 1))) BETWEEN ASCII('Ж') AND ASCII('Я')
+          THEN ASCII(UPPER(SUBSTR(last_name, 1, 1))) - ASCII('Ж') + 8
+          ELSE 0
+        END AS sum_letters,
+        CASE 
+          WHEN ASCII(UPPER(SUBSTR(last_name, 1, 1))) BETWEEN ASCII('A') AND ASCII('Z') 
+          THEN SUBSTR(last_name, 1, 1)
+          WHEN ASCII(UPPER(SUBSTR(last_name, 1, 1))) BETWEEN ASCII('А') AND ASCII('Е')
+          THEN SUBSTR(last_name, 1, 1)
+          WHEN UPPER(SUBSTR(last_name, 1, 1)) = 'Ё'
+          THEN SUBSTR(last_name, 1, 1)
+          WHEN ASCII(UPPER(SUBSTR(last_name, 1, 1))) BETWEEN ASCII('Ж') AND ASCII('Я')
+          THEN SUBSTR(last_name, 1, 1)
+          ELSE ''
+        END AS letters,
+        CASE 
+          WHEN ASCII(UPPER(SUBSTR(last_name, 1, 1))) BETWEEN ASCII('A') AND ASCII('Z') 
+          THEN (ASCII(UPPER(SUBSTR(last_name, 1, 1))) - ASCII('A') + 1)::text
+          WHEN ASCII(UPPER(SUBSTR(last_name, 1, 1))) BETWEEN ASCII('А') AND ASCII('Е')
+          THEN (ASCII(UPPER(SUBSTR(last_name, 1, 1))) - ASCII('А') + 1)::text
+          WHEN UPPER(SUBSTR(last_name, 1, 1)) = 'Ё'
+          THEN '7'
+          WHEN ASCII(UPPER(SUBSTR(last_name, 1, 1))) BETWEEN ASCII('Ж') AND ASCII('Я')
+          THEN (ASCII(UPPER(SUBSTR(last_name, 1, 1))) - ASCII('Ж') + 8)::text
+          ELSE ''
+        END AS numbers
     FROM bd_employees
     WHERE LENGTH(last_name) > 0
 
@@ -58,13 +91,47 @@ WITH RECURSIVE bd_letter_sum AS (
         first_name,
         pos + 1,
         sum_letters + CASE 
-          WHEN ASCII(UPPER(SUBSTR(last_name, pos + 1, 1))) BETWEEN ASCII('A') AND ASCII('Z')
-          THEN ASCII(UPPER(SUBSTR(last_name, pos + 1, 1))) - ASCII('A') + 1 ELSE 0
+          WHEN ASCII(UPPER(SUBSTR(last_name, pos + 1, 1))) BETWEEN ASCII('A') AND ASCII('Z') 
+          THEN ASCII(UPPER(SUBSTR(last_name, pos + 1, 1))) - ASCII('A') + 1
+          WHEN ASCII(UPPER(SUBSTR(last_name, pos + 1, 1))) BETWEEN ASCII('А') AND ASCII('Е')
+          THEN ASCII(UPPER(SUBSTR(last_name, pos + 1, 1))) - ASCII('А') + 1
+          WHEN UPPER(SUBSTR(last_name, pos + 1, 1)) = 'Ё'
+          THEN 7
+          WHEN ASCII(UPPER(SUBSTR(last_name, pos + 1, 1))) BETWEEN ASCII('Ж') AND ASCII('Я')
+          THEN ASCII(UPPER(SUBSTR(last_name, pos + 1, 1))) - ASCII('Ж') + 8
+          ELSE 0
+        END,
+        letters || '+' || CASE 
+          WHEN ASCII(UPPER(SUBSTR(last_name, pos + 1, 1))) BETWEEN ASCII('A') AND ASCII('Z') 
+          THEN SUBSTR(last_name, pos + 1, 1)
+          WHEN ASCII(UPPER(SUBSTR(last_name, pos + 1, 1))) BETWEEN ASCII('А') AND ASCII('Е')
+          THEN SUBSTR(last_name, pos + 1, 1)
+          WHEN UPPER(SUBSTR(last_name, pos + 1, 1)) = 'Ё'
+          THEN SUBSTR(last_name, pos + 1, 1)
+          WHEN ASCII(UPPER(SUBSTR(last_name, pos + 1, 1))) BETWEEN ASCII('Ж') AND ASCII('Я')
+          THEN SUBSTR(last_name, pos + 1, 1)
+          ELSE ''
+        END,
+        numbers || '+' || CASE 
+          WHEN ASCII(UPPER(SUBSTR(last_name, pos + 1, 1))) BETWEEN ASCII('A') AND ASCII('Z') 
+          THEN (ASCII(UPPER(SUBSTR(last_name, pos + 1, 1))) - ASCII('A') + 1)::text
+          WHEN ASCII(UPPER(SUBSTR(last_name, pos + 1, 1))) BETWEEN ASCII('А') AND ASCII('Е')
+          THEN (ASCII(UPPER(SUBSTR(last_name, pos + 1, 1))) - ASCII('А') + 1)::text
+          WHEN UPPER(SUBSTR(last_name, pos + 1, 1)) = 'Ё'
+          THEN '7'
+          WHEN ASCII(UPPER(SUBSTR(last_name, pos + 1, 1))) BETWEEN ASCII('Ж') AND ASCII('Я')
+          THEN (ASCII(UPPER(SUBSTR(last_name, pos + 1, 1))) - ASCII('Ж') + 8)::text
+          ELSE ''
         END
     FROM bd_letter_sum
     WHERE pos < LENGTH(last_name)
 )
-  SELECT last_name, first_name, MAX(sum_letters) AS total_alpha_sum
-    FROM bd_letter_sum
+SELECT 
+    last_name, 
+    first_name, 
+    MAX(sum_letters) AS total_alpha_sum,
+    MAX(letters) AS letters_expression,
+    MAX(numbers) || '='|| MAX(sum_letters) AS numbers_expression
+FROM bd_letter_sum
 GROUP BY last_name, first_name
 ORDER BY last_name, first_name;
