@@ -42,22 +42,31 @@ DECLARE
     my_cursor CURSOR FOR 
         SELECT last_name, first_name, salary_in_euro 
         FROM bd6_employees 
-        ORDER BY salary_in_euro DESC;
-    remains DECIMAL(4,2) := 0;
+        ORDER BY salary_in_euro DESC, id
+        OFFSET 1;
+    remains DECIMAL(14, 2) := 0; -- 10^10 * 100 remains total in world
+    remain DECIMAL(4, 2) := 0;
 BEGIN
-    OPEN my_cursor;
-    LOOP
-        FETCH my_cursor INTO name_salary;
-        EXIT WHEN NOT FOUND;
+    FOR name_salary IN my_cursor LOOP
+        
+        remain := name_salary.salary_in_euro % 100;
+        remains := remains + remain;
+        name_salary.salary_in_euro := name_salary.salary_in_euro - remain;
 
-        name_salary.salary_in_euro := name_salary.salary_in_euro + remains;
-        remains := name_salary.salary_in_euro % 100;
-        name_salary.salary_in_euro := name_salary.salary_in_euro - remains;
-
-        RAISE NOTICE 'Surname: %, Name: %, Salary %',
-            name_salary.last_name, name_salary.first_name, name_salary.salary_in_euro;
+        RAISE NOTICE 'Surname: %, Name: %, Salary %, Remain %, Sum %',
+            name_salary.last_name, name_salary.first_name, name_salary.salary_in_euro,
+            remain, remains;
+        
     END LOOP;
-    CLOSE my_cursor;
+    
+    SELECT last_name, first_name, salary_in_euro 
+    INTO name_salary
+    FROM bd6_employees 
+    ORDER BY salary_in_euro DESC, id 
+    LIMIT 1;
+
+    RAISE NOTICE 'Surname: %, Name: %, Salary: %', 
+        name_salary.last_name, name_salary.first_name, name_salary.salary_in_euro + remains;
 END;
 $$;
 CALL print_employee_sorted_salary();
