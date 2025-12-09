@@ -15,7 +15,7 @@ CREATE TABLE operations (
 );
 
 CREATE TABLE operation_log (
-    operation_id BIGINT NOT NULL,
+    operation_id BIGINT PRIMARY KEY,
     account_number VARCHAR(20) NOT NULL,
     operation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     operation_type operation_sign NOT NULL,
@@ -35,7 +35,7 @@ INSERT INTO operations (account_number, operation_name, operation_sum) VALUES
 ('ACC456', 'Loan Repayment', 12000.00),
 ('ACC456', 'Investment Deposit', 10000.00);
 
--- Insert 12 rows into operation_log
+-- Insert 10 rows into operation_log
 INSERT INTO operation_log (operation_id, account_number, operation_type, operation_date) VALUES
 (1, 'ACC123', '+', '2025-12-01 09:30:00'),     -- Initial Deposit (morning)
 (2, 'ACC123', '+', '2025-12-01 17:45:00'),     -- Salary Credit (evening)
@@ -43,8 +43,6 @@ INSERT INTO operation_log (operation_id, account_number, operation_type, operati
 (4, 'ACC123', '-', '2025-12-02 19:15:00'),     -- Online Payment (evening)
 (5, 'ACC123', '+', '2025-12-03 11:10:00'),     -- Transfer Received (morning)
 (6, 'ACC123', '-', '2025-12-03 20:30:00'),     -- Utility Bill (night)
-(1, 'ACC123', '+', '2025-12-01 09:35:00'),     -- Audit log 5min later
-(3, 'ACC123', '-', '2025-12-02 14:25:00'),     -- Audit log 5min later
 (7, 'ACC456', '+', '2025-12-02 10:00:00'),     -- Freelance Payment (morning)
 (8, 'ACC456', '-', '2025-12-03 16:45:00'),     -- Grocery Purchase (afternoon)
 (9, 'ACC456', '-', '2025-12-04 08:20:00'),     -- Loan Repayment (morning)
@@ -70,7 +68,7 @@ BEGIN
         WHERE l.account_number = acc_number
           AND l.operation_type = '+'
           AND l.operation_date BETWEEN start_date AND end_date
-        ORDER BY l.operation_date;
+        ORDER BY 2 DESC, 3 DESC;
 
     OPEN neg_cursor FOR
         SELECT l.operation_type, o.operation_sum, l.operation_date
@@ -79,7 +77,7 @@ BEGIN
         WHERE l.account_number = acc_number
           AND l.operation_type = '-'
           AND l.operation_date BETWEEN start_date AND end_date
-        ORDER BY l.operation_date;
+        ORDER BY 2 DESC, 3 DESC;
     
     RAISE NOTICE '--- Statement of Account for % from % to % ---', acc_number, start_date, end_date;
 
@@ -103,7 +101,7 @@ BEGIN
             i := i + 1;
         END IF;
         oper_count := oper_count + 1;
-        avg_sum := avg_sum + rec.operation_sum;
+        avg_sum := avg_sum - rec.operation_sum;
     END LOOP;
     CLOSE pos_cursor;
     CLOSE neg_cursor;
@@ -117,23 +115,33 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-SELECT statement_of_account('ACC123', '2025-12-01 00:00:00', '2025-12-03 23:59:59');
+SELECT statement_of_account('ACC123', '2026-12-01 00:00:00', '2025-12-03 23:59:59');
 
 -- Task 3
-CREATE OR REPLACE FUNCTION account_operation(acc_number VARCHAR, id BIGINT, oper_sum DECIMAL(40,2))
-RETURNS VOID AS
-$$
+CREATE OR REPLACE PROCEDURE account_operation(
+    acc_number VARCHAR,
+    id BIGINT,
+    oper_sum DECIMAL(40,2)
+)
+LANGUAGE plpgsql
+AS $$
 BEGIN
     IF oper_sum > 0 THEN
         INSERT INTO operations (id, account_number, operation_name, operation_sum)
         VALUES (id, acc_number, 'внесение денег на счет', oper_sum);
-    END IF;
-END;
-$$ LANGUAGE plpgsql;
 
-SELECT account_operation('ACC789', 11, 1500.00);
+        INSERT INTO operation_log (operation_id, account_number, operation_type, operation_date)
+        VALUES (id, acc_number, '+', now());
+    END IF;
+
+    COMMIT;
+END;
+$$;
+
+CALL account_operation('ACC789', 23, -1500.00);
 
 SELECT * FROM operations;
+SELECT * FROM operation_log;
 
 -- Task 4
 
@@ -141,14 +149,12 @@ SELECT * FROM workers;
 
 SELECT
     w.id, w.fn, w.ln, w.sn,
-    STRING_AGG(DISTINCT tech, ', ' ORDER BY tech) AS technologies
+    STRING_AGG(DISTINCT tech, ' | ' ORDER BY tech) AS technologies
 FROM workers AS w
 LEFT JOIN LATERAL (
     SELECT t
-    FROM regexp_split_to_table(w.work_description, '[^A-z]+') AS t
+    FROM regexp_split_to_table(w.work_description, '[^A-z[:punct:]]+') AS t
     WHERE t IS NOT NULL AND t <> ''
 ) AS tech(tech) ON true
-GROUP BY 1, 2, 3, 4
+GROUP BY w.id
 ORDER BY w.id;
-
-
