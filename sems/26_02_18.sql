@@ -7,7 +7,7 @@ DROP PROCEDURE IF EXISTS birthday_boys CASCADE;
 CREATE TYPE sex_type AS ENUM ('м', 'ж');
 
 CREATE TABLE staff (
-    id BIGINT PRIMARY KEY,
+    id NUMERIC PRIMARY KEY,
     last_name VARCHAR(64) NOT NULL,
     first_name VARCHAR(64) NOT NULL,
     second_name VARCHAR(64),
@@ -15,7 +15,7 @@ CREATE TABLE staff (
     birthday DATE NOT NULL,
     post VARCHAR(128) NOT NULL,
     department VARCHAR(128) NOT NULL,
-    head_id BIGINT,
+    head_id NUMERIC,
     UNIQUE (post, department),
     FOREIGN KEY (head_id) REFERENCES staff(id)
 );
