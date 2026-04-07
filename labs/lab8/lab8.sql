@@ -143,11 +143,11 @@ ALTER TABLE IF EXISTS public.room
 
 ALTER TABLE IF EXISTS public.room
     ADD CONSTRAINT ck_room_temp_conditions_valid
-    CHECK (temp_conditions::integer > 0 AND temp_conditions::integer < 100);
+    CHECK (temp_conditions > 0 AND temp_conditions < 100);
 
 ALTER TABLE IF EXISTS public.room
     ADD CONSTRAINT ck_room_humidity_conditions_valid
-    CHECK (humidity_conditions::integer > 0 AND humidity_conditions::integer < 100);
+    CHECK (humidity_conditions > 0 AND humidity_conditions < 100);
 
 ALTER TABLE IF EXISTS public.rack
     ADD CONSTRAINT ck_rack_storage_slots_positive
@@ -175,11 +175,11 @@ ALTER TABLE IF EXISTS public.product
 
 ALTER TABLE IF EXISTS public.product
     ADD CONSTRAINT ck_product_temp_conditions_valid
-    CHECK (temp_conditions::integer > 0 AND temp_conditions::integer < 100);
+    CHECK (temp_conditions > 0 AND temp_conditions < 100);
 
 ALTER TABLE IF EXISTS public.product
     ADD CONSTRAINT ck_product_humidity_conditions_valid
-    CHECK (humidity_conditions::integer > 0 AND humidity_conditions::integer < 100);
+    CHECK (humidity_conditions > 0 AND humidity_conditions < 100);
 
 ALTER TABLE IF EXISTS public.contract
     ADD CONSTRAINT ck_contract_end_date_future
