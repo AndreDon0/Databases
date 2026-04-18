@@ -12,7 +12,7 @@ DROP TABLE IF EXISTS public.tenancy CASCADE;
 
 CREATE TABLE IF NOT EXISTS public.room
 (
-    id_room smallint,
+    id_room smallserial,
     room_name character varying(100) NOT NULL,
     capacity_volume numeric(10, 2) NOT NULL,
     temp_conditions smallint NOT NULL,
