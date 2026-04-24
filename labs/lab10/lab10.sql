@@ -30,6 +30,7 @@ BEGIN
     END IF;
 
     IF COALESCE(occupied_slots, 0) + 1 > COALESCE(max_slots, 0) THEN
+        RAISE WARNING 'Not enough slots on the rack. Didn\'t add the tenancy_id to the placement table.';
         NEW.id_tenancy = NULL;
     END IF;
     RETURN NEW;
@@ -54,6 +55,7 @@ BEGIN
     INTO current_weight;
               
     IF current_weight > NEW.max_load THEN
+        RAISE WARNING 'Max load is exceeded. Didn\'t update the rack table.';
         RETURN NULL;
     END IF;
     RETURN NEW;
@@ -144,15 +146,16 @@ CREATE OR REPLACE AGGREGATE max_size(numeric, numeric, numeric) (
     PARALLEL    = SAFE
 );
 
--- 3. Создайте представление, отображающее описания клиентов, ключевые поля таблицы клиенты, и описание их товаров. Реализуйте
--- возможность изменения описания клиентов через это представление в реальной таблице.
+-- 3. Создайте представление, отображающее описания клиентов, ключевые поля таблицы клиенты, и описание их товаров.
+-- Реализуйте возможность изменения описания клиентов через это представление в реальной таблице.
 
 CREATE OR REPLACE VIEW client_view AS
-SELECT c.company_name, c.bank_details, pr.description
+SELECT c.company_name, c.bank_details, STRING_AGG(pr.description, ', ' ORDER BY pr.description) AS descriptions
 FROM client c
-    JOIN tenancy t USING (id_client)
-    JOIN placement p USING (id_tenancy)
-    JOIN product pr USING (id_product);
+    LEFT JOIN tenancy t USING (id_client)
+    LEFT JOIN placement p USING (id_tenancy)
+    LEFT JOIN product pr USING (id_product)
+GROUP BY c.company_name, c.bank_details;
 
 CREATE OR REPLACE FUNCTION update_client_view()
 RETURNS TRIGGER AS $$
@@ -162,6 +165,14 @@ BEGIN
         bank_details = NEW.bank_details
     WHERE company_name = OLD.company_name
       AND bank_details = OLD.bank_details;
+    IF NOT FOUND THEN
+        RAISE WARNING 'Client not found. Please check the company name and bank details.';
+        RETURN NULL;
+    END IF;
+
+    IF OLD.descriptions IS DISTINCT FROM NEW.descriptions THEN
+        RAISE WARNING 'You are trying to change the description of the client, but this is not allowed.';
+    END IF;
 
     RETURN NEW;
 END;
@@ -196,14 +207,17 @@ RETURNS VARCHAR(64) AS $$
 DECLARE
     v_data VARCHAR(64);
 BEGIN
-    DELETE FROM queue
-    WHERE id = (
+    WITH next_item AS (
         SELECT id
         FROM queue
         ORDER BY id ASC
         LIMIT 1
+        FOR UPDATE SKIP LOCKED
     )
-    RETURNING data INTO v_data;
+    DELETE FROM queue q
+    USING next_item ni
+    WHERE q.id = ni.id
+    RETURNING q.data INTO v_data;
 
     RETURN v_data;
 END;
@@ -223,11 +237,11 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION init()
 RETURNS VOID AS $$
 BEGIN
-    DROP TABLE IF EXISTS queue CASCADE;
-    CREATE TABLE queue (
+    CREATE TABLE IF NOT EXISTS queue (
         id BIGSERIAL PRIMARY KEY,
         data VARCHAR(64) NOT NULL
     );
+    TRUNCATE TABLE queue RESTART IDENTITY;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -237,3 +251,15 @@ BEGIN
     RETURN (SELECT data FROM queue ORDER BY id DESC LIMIT 1);
 END;
 $$ LANGUAGE plpgsql;
+
+
+SELECT init();
+SELECT enqueue('first');
+SELECT enqueue('second');
+SELECT enqueue('third');
+SELECT tail();
+SELECT dequeue();
+SELECT dequeue();
+SELECT tail();
+SELECT empty();
+SELECT dequeue();
