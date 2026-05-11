@@ -67,6 +67,50 @@ BEFORE UPDATE ON rack
 FOR EACH ROW
 EXECUTE PROCEDURE check_rack_max_load();
 
+-- Создаем стелаж с одним местом
+INSERT INTO rack (rack_number, storage_slots, max_load, height, width, length, id_room)
+VALUES ('TST-L10-R-001', 1, 500.00, 2.000, 1.000, 1.000, 1);
+
+-- Проверка триггеров выше: в клиенте — WARNING, не ERROR. Нужна хотя бы одна строка в client.
+INSERT INTO contract (contract_number, end_date)
+VALUES ('TST-L10-TRIG-DEMO', DATE '2035-06-01');
+
+INSERT INTO product (description, length, width, height, weight, arrival_date, temp_conditions, humidity_conditions, "position", id_contract)
+SELECT 'TST-L10-TRIG-P1', 0.10, 0.10, 0.10, 25.00, CURRENT_DATE, 5, 50, 1, id_contract
+FROM contract WHERE contract_number = 'TST-L10-TRIG-DEMO';
+
+INSERT INTO product (description, length, width, height, weight, arrival_date, temp_conditions, humidity_conditions, "position", id_contract)
+SELECT 'TST-L10-TRIG-P2', 0.10, 0.10, 0.10, 25.00, CURRENT_DATE, 5, 50, 2, id_contract
+FROM contract WHERE contract_number = 'TST-L10-TRIG-DEMO';
+
+INSERT INTO tenancy (id_client, id_rack)
+SELECT (SELECT MIN(id_client) FROM client), id_rack
+FROM rack WHERE rack_number = 'TST-L10-R-001';
+
+INSERT INTO placement (id_product, id_tenancy)
+SELECT p.id_product, t.id_tenancy
+FROM product p
+CROSS JOIN tenancy t
+JOIN rack r ON r.id_rack = t.id_rack
+WHERE p.description = 'TST-L10-TRIG-P1'
+  AND r.rack_number = 'TST-L10-R-001';
+
+-- Превышение числа мест (второй товар): WARNING, id_tenancy станет NULL.
+INSERT INTO placement (id_product, id_tenancy)
+SELECT p.id_product, t.id_tenancy
+FROM product p
+CROSS JOIN tenancy t
+JOIN rack r ON r.id_rack = t.id_rack
+WHERE p.description = 'TST-L10-TRIG-P2'
+  AND r.rack_number = 'TST-L10-R-001';
+
+SELECT * FROM placement WHERE id_tenancy IS NULL;
+
+-- max_load меньше суммарного веса на стеллаже: WARNING, UPDATE не применится.
+UPDATE rack SET max_load = 10.00 WHERE rack_number = 'TST-L10-R-001';
+
+SELECT * FROM rack WHERE rack_number = 'TST-L10-R-001';
+
 -- 1. По указанному имени клиента и дате вычисляет количество товаров, срок договора которых истекает до переданной в качестве аргумента
 -- даты, хранящихся на складе и принадлежащих данному клиенту. Возвращает целое число.
 
@@ -91,6 +135,8 @@ BEGIN
     RETURN COALESCE(expiring_products, 0);
 END;
 $$ LANGUAGE plpgsql;
+
+SELECT get_expiring_products('рога и копыта', DATE '2027-12-31');
 
 -- 2. Для множества строк, содержащих длину, ширину и высоту хранящихся на складе товаров, вычисляет максимальные габариты
 -- места, необходимые для того, чтобы поместился любой из хранящихся товаров, и представляет их в виде одной строки в формате «высота X
@@ -145,6 +191,9 @@ CREATE OR REPLACE AGGREGATE max_size(numeric, numeric, numeric) (
     INITCOND    = '(0,0,0)',
     PARALLEL    = SAFE
 );
+
+SELECT max_size(height, width, length) AS max_size
+FROM product;
 
 -- 3. Создайте представление, отображающее описания клиентов, ключевые поля таблицы клиенты, и описание их товаров.
 -- Реализуйте возможность изменения описания клиентов через это представление в реальной таблице.
