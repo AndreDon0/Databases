@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Помещения — Управление складом</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div>
+        <h1>Помещения</h1>
+        <p class="subtitle"><a href="/">← На главную</a></p>
+      </div>
+    </header>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <main class="page-main">
+      <section class="card">
+        <div class="toolbar">
+          <button type="button" id="rooms-prev" class="btn">← Предыдущая</button>
+          <span id="rooms-page-label" class="page-label"></span>
+          <button type="button" id="rooms-next" class="btn">Следующая →</button>
+          <label class="inline-label page-size-field">
+            Показать
+            <input
+              type="number"
+              id="rooms-page-size"
+              class="page-size-input"
+              min="1"
+              max="200"
+              step="1"
+              value="25"
+              title="Количество записей на странице (не более 200)"
+            />
+            <span class="page-size-suffix">шт.</span>
+          </label>
+        </div>
+
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="th-sort">
+                  №
+                  <span class="sort-group">
+                    <button type="button" class="sort-arrow" data-sort="id_room" data-order="asc" title="По возрастанию">↑</button>
+                    <button type="button" class="sort-arrow" data-sort="id_room" data-order="desc" title="По убыванию">↓</button>
+                  </span>
+                </th>
+                <th class="th-sort">
+                  Название
+                  <span class="sort-group">
+                    <button type="button" class="sort-arrow" data-sort="room_name" data-order="asc">↑</button>
+                    <button type="button" class="sort-arrow" data-sort="room_name" data-order="desc">↓</button>
+                  </span>
+                </th>
+                <th class="th-sort">
+                  Объём
+                  <span class="sort-group">
+                    <button type="button" class="sort-arrow" data-sort="capacity_volume" data-order="asc">↑</button>
+                    <button type="button" class="sort-arrow" data-sort="capacity_volume" data-order="desc">↓</button>
+                  </span>
+                </th>
+                <th class="th-sort">
+                  Темп.
+                  <span class="sort-group">
+                    <button type="button" class="sort-arrow" data-sort="temp_conditions" data-order="asc">↑</button>
+                    <button type="button" class="sort-arrow" data-sort="temp_conditions" data-order="desc">↓</button>
+                  </span>
+                </th>
+                <th class="th-sort">
+                  Влажн.
+                  <span class="sort-group">
+                    <button type="button" class="sort-arrow" data-sort="humidity_conditions" data-order="asc">↑</button>
+                    <button type="button" class="sort-arrow" data-sort="humidity_conditions" data-order="desc">↓</button>
+                  </span>
+                </th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="rooms-body"></tbody>
+          </table>
+        </div>
+
+        <details class="panel">
+          <summary>Добавить помещение</summary>
+          <form id="room-create" class="form-grid inner-form">
+            <label>
+              Название
+              <input name="room_name" required maxlength="100" autocomplete="off" />
+            </label>
+            <label>
+              Объём
+              <input name="capacity_volume" type="number" step="0.01" min="0.01" required />
+            </label>
+            <label>
+              Температура (1–99)
+              <input name="temp_conditions" type="number" min="1" max="99" required />
+            </label>
+            <label>
+              Влажность (1–99)
+              <input name="humidity_conditions" type="number" min="1" max="99" required />
+            </label>
+            <button type="submit" class="btn primary">Создать</button>
+          </form>
+        </details>
+
+        <details id="room-edit-wrap" class="panel">
+          <summary>Изменить помещение</summary>
+          <form id="room-edit" class="form-grid inner-form">
+            <input type="hidden" name="original_name" />
+            <label>
+              Название
+              <input name="room_name" required maxlength="100" />
+            </label>
+            <label>
+              Объём
+              <input name="capacity_volume" type="number" step="0.01" min="0.01" required />
+            </label>
+            <label>
+              Температура
+              <input name="temp_conditions" type="number" min="1" max="99" required />
+            </label>
+            <label>
+              Влажность
+              <input name="humidity_conditions" type="number" min="1" max="99" required />
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="btn primary">Сохранить</button>
+              <button type="button" id="room-edit-cancel" class="btn ghost">Закрыть</button>
+            </div>
+          </form>
+        </details>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>Управление складом</span>
+    </footer>
+
+    <script type="module" src="/static/rooms.js"></script>
+  </body>
+</html>

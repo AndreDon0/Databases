@@ -1,0 +1,6 @@
+__pycache__/
+.venv/
+alembic/
+config.yaml
+.python-version
+alembic.ini
