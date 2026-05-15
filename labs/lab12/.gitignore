@@ -3,4 +3,3 @@ __pycache__/
 alembic/
 config.yaml
 .python-version
-alembic.ini

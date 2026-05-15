@@ -10,9 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from lab12.api.routers import inventory, racks, rooms
 from lab12.migrations import upgrade_schema
-from lab12.paths import PROJECT_ROOT
-
-SITE_DIR = PROJECT_ROOT / "site"
+from lab12.paths import SITE_DIR
 
 
 @asynccontextmanager

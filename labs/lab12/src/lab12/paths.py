@@ -6,3 +6,4 @@ from pathlib import Path
 
 _PACKAGE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = _PACKAGE_DIR.parent.parent
+SITE_DIR = PROJECT_ROOT / "site"

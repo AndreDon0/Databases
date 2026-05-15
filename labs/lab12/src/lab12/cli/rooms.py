@@ -41,7 +41,7 @@ def clamp_room_skip(skip: int, total: int) -> int:
 
 def show_rooms(room_skip: int) -> tuple[int, int]:
     """Print one page of rooms. Returns (total_count, effective_skip)."""
-    print("Список помещений!")
+    print("\nСписок помещений!")
     print("№\tНазвание\tОбъём\tТемп.\tВлажн.%")
     try:
         with session_scope() as session:
@@ -51,18 +51,22 @@ def show_rooms(room_skip: int) -> tuple[int, int]:
                 return 0, 0
             skip = clamp_room_skip(room_skip, total)
             rooms = load_rooms_page(session, skip, PAGE_SIZE)
+            start_num = skip + 1
+            for i, r in enumerate(rooms):
+                idx = start_num + i
+                print(
+                    f"{idx}\t{r.room_name}\t{r.capacity_volume}\t"
+                    f"{r.temp_conditions}\t{r.humidity_conditions}"
+                )
+            end_num = skip + len(rooms)
+            print(
+                f"Показано {start_num}–{end_num} из {total} "
+                f"(по {PAGE_SIZE} на страницу)."
+            )
     except Exception as exc:
         print(db_error_message(exc))
         return 0, 0
 
-    start_num = skip + 1
-    for i, r in enumerate(rooms):
-        idx = start_num + i
-        print(
-            f"{idx}\t{r.room_name}\t{r.capacity_volume}\t{r.temp_conditions}\t{r.humidity_conditions}"
-        )
-    end_num = skip + len(rooms)
-    print(f"Показано {start_num}–{end_num} из {total} (по {PAGE_SIZE} на страницу).")
     return total, skip
 
 
@@ -81,7 +85,7 @@ def print_room_menu() -> None:
 
 def show_add_room() -> None:
     name = prompts.read_cancelable_nonempty(
-        "Название помещения (1 — отмена): ",
+        "Название помещения (0 — отмена): ",
         "Название не может быть пустым.",
     )
     if name is None:
@@ -150,8 +154,8 @@ def show_edit_room() -> None:
                 f"Редактирование: {room.room_name} "
                 f"(пустая строка — оставить как есть)"
             )
-            new_name = prompts.read_line("Новое название (1 — отмена всего): ")
-            if new_name == "1":
+            new_name = prompts.read_line("Новое название (0 — отмена всего): ")
+            if new_name == "0":
                 return
             if new_name != "":
                 if len(new_name) > 100:

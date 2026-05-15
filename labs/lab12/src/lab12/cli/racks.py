@@ -89,7 +89,7 @@ def show_racks_for_room(
             total = rack_total_in_room(session, room.id_room)
             skip = clamp_rack_skip(rack_skip, total)
             racks = load_racks_page(session, room.id_room, skip, PAGE_SIZE)
-            print("Стеллажи (№ в списке — не идентификатор БД):")
+            print("\nСтеллажи (№ в списке — не идентификатор БД):")
             print("№\tНомер\tСлоты\tМакс.кг\tВыс.\tШир.\tДлина")
             start_num = skip + 1
             for i, rk in enumerate(racks):
@@ -128,7 +128,7 @@ def show_add_rack(selected_room_id: int | None) -> None:
         print("Сначала выберите помещение.")
         return
     rack_no = prompts.read_cancelable_nonempty(
-        "Номер стеллажа (уникален в пределах помещения, 1 — отмена): ",
+        "Номер стеллажа (уникален в пределах помещения, 0 — отмена): ",
         "Номер не может быть пустым.",
     )
     if rack_no is None:
@@ -218,10 +218,10 @@ def show_edit_rack(selected_room_id: int | None) -> None:
                 return
             print(
                 f"Редактирование стеллажа «{rk.rack_number}» "
-                f"(пустая строка — оставить как есть; 1 — отмена всего)"
+                f"(пустая строка — оставить как есть; 0 — отмена всего)"
             )
             new_no = prompts.read_line("Новый номер стеллажа в помещении: ")
-            if new_no == "1":
+            if new_no == "0":
                 return
             if new_no != "":
                 if len(new_no) > 20:

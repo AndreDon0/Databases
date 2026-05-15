@@ -1,4 +1,4 @@
-"""SQLAlchemy 2.0 models: помещения (room) и стеллажи (rack), вариант 3."""
+"""SQLAlchemy 2.0 models: помещения (room) и стеллажи (rack)"""
 
 from __future__ import annotations
 
